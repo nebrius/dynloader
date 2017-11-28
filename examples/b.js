@@ -1,5 +1,6 @@
 dyn({
   name: 'b',
+  backgroundDeps: [ 'd' ],
   onLoad(initDeps) {
     return {
       getName() {

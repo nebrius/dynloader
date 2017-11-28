@@ -1,10 +1,10 @@
 dyn({
   name: 'a',
-  init: [ 'async' ],
-  background: [ 'b' ],
-  onLoad(initDeps, onBackgroundDepsLoaded) {
+  loadDeps: [ 'b' ],
+  backgroundDeps: [ 'c' ],
+  onLoad(loadDeps, onBackgroundLoad) {
     let getName;
-    onBackgroundDepsLoaded((backgroundDeps) => {
+    onBackgroundLoad((backgroundDeps) => {
       getName = backgroundDeps.b.getName;
     });
     return {
