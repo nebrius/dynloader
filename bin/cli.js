@@ -1,4 +1,4 @@
 const path = require('path');
-const updateProject = require('../src/index').updateProject;
+const run = require('../server/src/server').run;
 
-updateProject(path.join(__dirname, '..', 'examples'));
+run(path.join(__dirname, '..', 'examples'));

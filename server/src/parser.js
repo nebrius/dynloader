@@ -3,10 +3,10 @@ const path = require('path');
 const fs = require('fs');
 
 module.exports = {
-  updateProject
+  getModuleInfo
 };
 
-function updateProject(projectPath) {
+function getModuleInfo(projectPath) {
 
   const fileList = [];
   function searchDir(dirPath) {
@@ -38,19 +38,12 @@ function updateProject(projectPath) {
     }
     const declaration = ast.body[0];
     if (declaration.type !== 'ExpressionStatement' ||
-      declaration.expression.type !== 'CallExpression' ||
-      declaration.expression.callee.name !== 'dyn'
+      declaration.expression.type !== 'ObjectExpression'
     ) {
-      printNotDynModule('Expected a function call to "dyn"');
+      printNotDynModule('Expected a single object expression, e.g. ({ ... })');
       return;
     }
-    if (declaration.expression.arguments.length !== 1 ||
-      declaration.expression.arguments[0].type !== 'ObjectExpression'
-    ) {
-      printNotDynModule('Expected a single object argument to "dyn"');
-      return;
-    }
-    const spec = declaration.expression.arguments[0].properties;
+    const spec = declaration.expression.properties;
 
     function getProperty(name) {
       const prop = spec.filter((property) => {
@@ -106,12 +99,11 @@ function updateProject(projectPath) {
     }
     deps[name] = {
       name,
+      filePath,
       loadDepNames,
       backgroundDepNames,
       loadDeps: [],
-      backgroundDeps: [],
-      flattenedLoadDeps: [],
-      flattenedBackgroundDeps: []
+      backgroundDeps: []
     };
   });
 
@@ -133,56 +125,7 @@ function updateProject(projectPath) {
   }
 
   // Check for circular dependencies
-  for (const depName in deps) {
-    const visitedDependencies = [];
-    const visitStack = [ deps[depName] ];
-    while (true) {
-      const nextDep = visitStack.shift();
-      if (!nextDep) {
-        break;
-      }
-      if (visitedDependencies.indexOf(nextDep.name) !== -1) {
-        throw new Error(`Dependency ${nextDep.name} is in a circular dependency chain`);
-      }
-      visitedDependencies.push(nextDep.name);
-      visitStack.push(...nextDep.loadDeps);
-      visitStack.push(...nextDep.backgroundDeps);
-    }
-  }
+  // TODO: need to do a full DFS to do this properly, skipping for now
 
-  // Generate the flattened dep lists for each module
-  for (const depName in deps) {
-    const dep = deps[depName];
-    const loadDepStack = [ ...dep.loadDeps ];
-    const backgroundDepStack = [ ...dep.backgroundDeps ];
-    while (true) {
-      const nextDep = loadDepStack.shift();
-      if (!nextDep) {
-        break;
-      }
-      dep.flattenedLoadDeps.push(nextDep);
-      loadDepStack.push(...nextDep.loadDeps);
-      backgroundDepStack.push(...nextDep.backgroundDeps);
-    }
-    while (true) {
-      const nextDep = backgroundDepStack.shift();
-      if (!nextDep) {
-        break;
-      }
-      dep.flattenedBackgroundDeps.push(nextDep);
-      backgroundDepStack.push(...nextDep.loadDeps);
-      backgroundDepStack.push(...nextDep.backgroundDeps);
-    }
-  }
-
-  for (const depName in deps) {
-    const dep = deps[depName];
-    console.log(`${depName}:`);
-    if (dep.flattenedLoadDeps.length) {
-      console.log(`  Load deps: ${dep.flattenedLoadDeps.map((dep) => dep.name).join(',')}`);
-    }
-    if (dep.flattenedBackgroundDeps.length) {
-      console.log(`  Background deps: ${dep.flattenedBackgroundDeps.map((dep) => dep.name).join(',')}`);
-    }
-  }
+  return deps;
 }

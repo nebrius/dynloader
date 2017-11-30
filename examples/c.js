@@ -1,7 +1,12 @@
-dyn({
+({
   name: 'c',
   loadDeps: [ 'e', 'f' ],
   onLoad() {
-    return {};
+    console.log('c load');
+    return {
+      getName() {
+        return 'Bender Bending Rodriguez'
+      }
+    };
   }
 });

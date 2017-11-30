@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="/loader.js"></script>
+  </head>
+  <body>
+    <script>
+      dyn.init({{{moduleInfo}}});
+      dyn.load('a', (err, { a }) => {
+        function print() {
+          a.printState();
+          setTimeout(print, 1000);
+        }
+        print();
+      });
+    </script>
+  </body>
+</html>

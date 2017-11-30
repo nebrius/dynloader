@@ -1,27 +1,111 @@
-const depCache = {};
+let config;
 
-window.dyn = dyn;
-window.dyn.load = load;
+window.dyn = {
+  init,
+  load
+};
 
-function dyn(mod) {
-  // Goal is to call onLoad and onBackgroundLoad at the end of everything
+function init(c) {
+  config = c;
 }
 
-function load(modName, onLoad) {
-  fetch(`/dyn/load?module=${modName}`)
+const mods = {};
+
+function fetchModules(moduleList, cb) {
+  const loadModules = JSON.stringify(moduleList);
+  fetch(`/dyn/load?modules=${loadModules}`)
     .then((res) => res.json())
-    .then((data) => {
-      onLoad(undefined, data);
-      setTimeout(() => background(modName));
-    })
-    .catch((err) => onLoad(err, undefined));
+    // Break out of the promise to get usable exceptions and reasonable debugging
+    .then((moduleData) => setTimeout(() => cb(undefined, moduleData)))
+    .catch((err) => setTimeout(() => cb(err, undefined)));
 }
 
-function background(modName) {
-  fetch(`/dyn/background?module=${modName}`)
-    .then((res) => res.json())
-    .then((data) => {
+function load(modNames, cb) {
+  if (!Array.isArray(modNames)) {
+    modNames = [ modNames ];
+  }
+  const depsToLoad = [];
+  for (const modName of modNames) {
+    if (!config[modName]) {
+      throw new Error(`Unknown module ${modName}`);
+    }
+    function visitNode(node) {
+      for (const loadDep of node.loadDeps) {
+        visitNode(loadDep);
+      }
+      depsToLoad.push(node);
+    }
+    visitNode(config[modName]);
+  }
 
-    })
-    .catch()
+  function onFetchComplete() {
+    const deps = {};
+    for (const modName of modNames) {
+      deps[modName] = mods[modName].value;
+    }
+    cb(undefined, deps);
+  }
+
+  const depsToFetch = depsToLoad.filter((depName) => !mods.hasOwnProperty(depName));
+  if (!depsToFetch.length) {
+    onFetchComplete();
+  } else {
+    fetchModules(depsToFetch.map((dep) => dep.name), (err, moduleData) => {
+      if (err) {
+        onLoad(err);
+        return;
+      }
+
+      function loadDep(depName) {
+        const moduleCode = moduleData[depName];
+        const mod = eval(moduleCode);
+        const loadDeps = {};
+        if (mod.loadDeps) {
+          for (const loadDepName of mod.loadDeps) {
+            if (!mods[loadDepName]) {
+              loadDep(loadDepName);
+            }
+            loadDeps[loadDepName] = mods[loadDepName].value;
+          }
+        }
+        mods[depName] = {
+          spec: config[depName],
+          onBackgroundLoad: undefined
+        }
+        mods[depName].value = mod.onLoad(loadDeps, (listener) => mods[depName].onBackgroundLoad = listener);
+      }
+      depsToFetch.map((dep) => dep.name).forEach(loadDep);
+
+      onFetchComplete();
+
+      setTimeout(() => {
+        const backgroundDepsToFetch = [];
+        for (const modName of modNames) {
+          if (mods[modName].spec.backgroundDeps) {
+            backgroundDepsToFetch.push(...mods[modNames].spec.backgroundDeps);
+          }
+        }
+        if (!backgroundDepsToFetch.length) {
+          return;
+        }
+        load(backgroundDepsToFetch.map((dep) => dep.name), (err, deps) => {
+          for (const modName of modNames) {
+            const spec = mods[modName].spec;
+            const onBackgroundLoad = mods[modName].onBackgroundLoad;
+            if (spec.backgroundDeps && onBackgroundLoad) {
+              if (err) {
+                onBackgroundLoad(err, undefined);
+              } else {
+                const deps = {};
+                for (const depSpec of spec.backgroundDeps) {
+                  deps[depSpec.name] = mods[depSpec.name].value;
+                }
+                onBackgroundLoad(undefined, deps);
+              }
+            }
+          }
+        });
+      });
+    });
+  }
 }
