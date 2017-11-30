@@ -1,5 +1,5 @@
 {
-  "name": "dynpack",
+  "name": "dynloader",
   "version": "1.0.0",
   "description": "A modern module loader for the web",
   "main": "src/index.js",
@@ -11,7 +11,8 @@
     "express": "^4.16.2",
     "handlebars": "^4.0.11",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "webpack": "^3.9.1"
   },
   "devDependencies": {},
   "scripts": {
@@ -19,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nebrius/dynpack.git"
+    "url": "git+https://github.com/nebrius/dynloader.git"
   },
   "keywords": [
     "module-loader"
@@ -27,7 +28,7 @@
   "author": "Bryan Hughes <bryan@nebri.us>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nebrius/dynpack/issues"
+    "url": "https://github.com/nebrius/dynloader/issues"
   },
-  "homepage": "https://github.com/nebrius/dynpack#readme"
+  "homepage": "https://github.com/nebrius/dynloader#readme"
 }
