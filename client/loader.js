@@ -72,7 +72,7 @@ function load(modNames, cb) {
           spec: config[depName],
           onBackgroundLoad: undefined
         }
-        mods[depName].value = mod.onLoad(loadDeps, (listener) => mods[depName].onBackgroundLoad = listener);
+        mods[depName].value = mod.onLoad(undefined, loadDeps, (listener) => mods[depName].onBackgroundLoad = listener);
       }
       depsToFetch.map((dep) => dep.name).forEach(loadDep);
 
@@ -82,13 +82,13 @@ function load(modNames, cb) {
         const backgroundDepsToFetch = [];
         for (const modName of modNames) {
           if (mods[modName].spec.backgroundDeps) {
-            backgroundDepsToFetch.push(...mods[modNames].spec.backgroundDeps);
+            backgroundDepsToFetch.push(...mods[modName].spec.backgroundDeps);
           }
         }
         if (!backgroundDepsToFetch.length) {
           return;
         }
-        load(backgroundDepsToFetch.map((dep) => dep.name), (err, deps) => {
+        load(backgroundDepsToFetch.map((dep) => dep.name), (err, deps, onBackgroundLoad) => {
           for (const modName of modNames) {
             const spec = mods[modName].spec;
             const onBackgroundLoad = mods[modName].onBackgroundLoad;

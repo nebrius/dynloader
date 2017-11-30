@@ -2,7 +2,7 @@
   name: 'a',
   loadDeps: [ 'b' ],
   backgroundDeps: [ 'c' ],
-  onLoad({ b }, onBackgroundLoad) {
+  onLoad(err, { b }, onBackgroundLoad) {
     console.log('a load');
     let c;
     onBackgroundLoad((err, { c: cdep }) => {
