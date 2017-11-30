@@ -1,7 +1,7 @@
 ({
   name: 'c',
-  loadDeps: [ 'e', 'f' ],
-  backgroundDeps: [ 'g' ],
+  loadDeps: [ 'e' ],
+  backgroundDeps: [ 'f', 'g' ],
   onLoad(err, { e, f }, onBackgroundLoad) {
     console.log('c load');
     onBackgroundLoad((err, { g }) => {

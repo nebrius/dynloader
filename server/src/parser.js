@@ -15,7 +15,9 @@ function getModuleInfo(projectPath) {
       const filePath = path.join(dirPath, file);
       const fileStats = fs.statSync(filePath);
       if (fileStats.isDirectory()) {
-        searchDir(filePath);
+        if (file !== 'node_modules') {
+          searchDir(filePath);
+        }
       } else if (path.extname(file) === '.js') {
         fileList.push(filePath);
       }
@@ -112,7 +114,12 @@ function getModuleInfo(projectPath) {
     const dep = deps[depName];
     dep.loadDeps = dep.loadDepNames.map((loadDepName) => {
       if (!deps[loadDepName]) {
-        throw new Error(`Unknown dependency "${loadDepName}"`);
+        if (fs.existsSync(path.join(projectPath, 'node_modules', loadDepName))) {
+          console.log('node_modules module');
+          // TODO
+        } else {
+          throw new Error(`Unknown or missing dependency "${loadDepName}"`);
+        }
       }
       return deps[loadDepName];
     });
@@ -126,6 +133,18 @@ function getModuleInfo(projectPath) {
 
   // Check for circular dependencies
   // TODO: need to do a full DFS to do this properly, skipping for now
+  function cycleCheck(node, path) {
+    const children = [ ...node.loadDeps, ...node.backgroundDeps ];
+    for (const child of children) {
+      if (path.indexOf(child.name) !== -1) {
+        throw new Error(`Cyclic dependency detected! Module ${node.name} has a dependency ${child.name} that is also a parent!`);
+      }
+      cycleCheck(child, [ ...path, child.name ]);
+    }
+  }
+  for (const depName in deps) {
+    cycleCheck(deps[depName], [ depName ]);
+  }
 
   return deps;
 }

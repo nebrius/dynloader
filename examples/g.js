@@ -1,6 +1,6 @@
 ({
   name: 'g',
-  backgroundDeps: [ 'h', 'i' ],
+  loadDeps: [ 'h', 'i' ],
   onLoad() {
     console.log('g load');
     return {};
