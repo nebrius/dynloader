@@ -1,7 +1,7 @@
 ({
   name: 'h',
-  onLoad() {
-    console.log('h load');
+  onLoad(err, loadDeps, onBackgroundLoad) {
+    console.log(`h load with deps: ${Object.keys(loadDeps)}`);
     return {};
   }
 });

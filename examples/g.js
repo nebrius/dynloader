@@ -1,8 +1,8 @@
 ({
   name: 'g',
   loadDeps: [ 'h', 'i' ],
-  onLoad() {
-    console.log('g load');
+  onLoad(err, loadDeps, onBackgroundLoad) {
+    console.log(`g load with deps: ${Object.keys(loadDeps)}`);
     return {};
   }
 });

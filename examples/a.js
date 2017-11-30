@@ -2,12 +2,13 @@
   name: 'a',
   loadDeps: [ 'b' ],
   backgroundDeps: [ 'c' ],
-  onLoad(err, { b }, onBackgroundLoad) {
-    console.log('a load');
+  onLoad(err, loadDeps, onBackgroundLoad) {
+    const b = loadDeps.b;
+    console.log(`a load with deps: ${Object.keys(loadDeps)}`);
     let c;
-    onBackgroundLoad((err, { c: cdep }) => {
-      console.log('a background');
-      c = cdep;
+    onBackgroundLoad((err, backgroundDeps) => {
+      console.log(`a background with deps: ${Object.keys(backgroundDeps)}`);
+      c = backgroundDeps.c;
     });
     return {
       printState() {

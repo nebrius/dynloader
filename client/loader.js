@@ -56,6 +56,8 @@ function load(modNames, cb) {
         return;
       }
 
+      const backgroundDepsToLoad = [];
+      const depsWithBackgroundDeps = [];
       function loadDep(depName) {
         const moduleCode = moduleData[depName];
         const mod = eval(moduleCode);
@@ -68,6 +70,10 @@ function load(modNames, cb) {
             loadDeps[loadDepName] = mods[loadDepName].value;
           }
         }
+        if (mod.backgroundDeps) {
+          depsWithBackgroundDeps.push(config[depName]);
+          backgroundDepsToLoad.push(...mod.backgroundDeps);
+        }
         mods[depName] = {
           spec: config[depName],
           onBackgroundLoad: undefined
@@ -78,26 +84,19 @@ function load(modNames, cb) {
 
       onFetchComplete();
 
+      if (!backgroundDepsToLoad.length) {
+        return;
+      }
       setTimeout(() => {
-        const backgroundDepsToFetch = [];
-        for (const modName of modNames) {
-          if (mods[modName].spec.backgroundDeps) {
-            backgroundDepsToFetch.push(...mods[modName].spec.backgroundDeps);
-          }
-        }
-        if (!backgroundDepsToFetch.length) {
-          return;
-        }
-        load(backgroundDepsToFetch.map((dep) => dep.name), (err, deps, onBackgroundLoad) => {
-          for (const modName of modNames) {
-            const spec = mods[modName].spec;
-            const onBackgroundLoad = mods[modName].onBackgroundLoad;
-            if (spec.backgroundDeps && onBackgroundLoad) {
+        load(backgroundDepsToLoad, (err, deps, onBackgroundLoad) => {
+          for (const dep of depsWithBackgroundDeps) {
+            const onBackgroundLoad = mods[dep.name].onBackgroundLoad;
+            if (dep.backgroundDeps && onBackgroundLoad) {
               if (err) {
                 onBackgroundLoad(err, undefined);
               } else {
                 const deps = {};
-                for (const depSpec of spec.backgroundDeps) {
+                for (const depSpec of dep.backgroundDeps) {
                   deps[depSpec.name] = mods[depSpec.name].value;
                 }
                 onBackgroundLoad(undefined, deps);
