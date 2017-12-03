@@ -1,7 +1,7 @@
-({
+dyn.register({
   name: 'c',
-  loadDeps: [ 'e' ],
-  backgroundDeps: [ 'f', 'g' ],
+  loadDependencies: [ 'e' ],
+  lazyDependencies: [ 'f', 'g' ],
   onLoad(err, loadDeps, onBackgroundLoad) {
     console.log(`c load with deps: ${Object.keys(loadDeps)}`);
     onBackgroundLoad((err, backgroundDeps) => {

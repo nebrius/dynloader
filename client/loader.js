@@ -1,4 +1,4 @@
-let config;
+let moduleInfo;
 
 window.dyn = {
   init,
@@ -6,7 +6,7 @@ window.dyn = {
 };
 
 function init(c) {
-  config = c;
+  moduleInfo = c;
 }
 
 const mods = {};
@@ -25,17 +25,18 @@ function load(modNames, cb) {
     modNames = [ modNames ];
   }
   const depsToLoad = [];
-  for (const modName of modNames) {
-    if (!config[modName]) {
-      throw new Error(`Unknown module ${modName}`);
+  const depsToVisit = [ ...modNames ];
+  while (true) {
+    const depToParse = depsToVisit.shift();
+    if (!depToParse) {
+      break;
     }
-    function visitNode(node) {
-      for (const loadDep of node.loadDeps) {
-        visitNode(loadDep);
-      }
-      depsToLoad.push(node);
+    const moduleDefinition = moduleInfo[depToParse];
+    if (!moduleDefinition) {
+      throw new Error(`Unknown module ${depToParse}`);
     }
-    visitNode(config[modName]);
+    depsToLoad.push(depToParse);
+    depsToVisit.push(...moduleDefinition.loadDependencies.filter((loadDep) => depsToLoad.indexOf(loadDep) === -1));
   }
 
   function onFetchComplete() {
@@ -50,54 +51,59 @@ function load(modNames, cb) {
   if (!depsToFetch.length) {
     onFetchComplete();
   } else {
-    fetchModules(depsToFetch.map((dep) => dep.name), (err, moduleData) => {
+    fetchModules(depsToFetch, (err, moduleData) => {
       if (err) {
         onLoad(err);
         return;
       }
 
-      const backgroundDepsToLoad = [];
-      const depsWithBackgroundDeps = [];
+      const lazyDepsToLoad = [];
+      const depsWithLazyDeps = [];
       function loadDep(depName) {
         const moduleCode = moduleData[depName];
-        const mod = eval(moduleCode);
+        let mod;
+        window.dyn.register = (spec) => {
+          mod = spec;
+        };
+        eval(moduleCode);
+        delete window.dyn.register;
         const loadDeps = {};
-        if (mod.loadDeps) {
-          for (const loadDepName of mod.loadDeps) {
+        if (mod.loadDependencies) {
+          for (const loadDepName of mod.loadDependencies) {
             if (!mods[loadDepName]) {
               loadDep(loadDepName);
             }
             loadDeps[loadDepName] = mods[loadDepName].value;
           }
         }
-        if (mod.backgroundDeps) {
-          depsWithBackgroundDeps.push(config[depName]);
-          backgroundDepsToLoad.push(...mod.backgroundDeps);
+        if (mod.lazyDependencies) {
+          depsWithLazyDeps.push(moduleInfo[depName]);
+          lazyDepsToLoad.push(...mod.lazyDependencies);
         }
         mods[depName] = {
-          spec: config[depName],
+          spec: moduleInfo[depName],
           onBackgroundLoad: undefined
         }
         mods[depName].value = mod.onLoad(undefined, loadDeps, (listener) => mods[depName].onBackgroundLoad = listener);
       }
-      depsToFetch.map((dep) => dep.name).forEach(loadDep);
+      depsToFetch.forEach(loadDep);
 
       onFetchComplete();
 
-      if (!backgroundDepsToLoad.length) {
+      if (!lazyDepsToLoad.length) {
         return;
       }
       setTimeout(() => {
-        load(backgroundDepsToLoad, (err, deps, onBackgroundLoad) => {
-          for (const dep of depsWithBackgroundDeps) {
+        load(lazyDepsToLoad, (err, deps, onBackgroundLoad) => {
+          for (const dep of depsWithLazyDeps) {
             const onBackgroundLoad = mods[dep.name].onBackgroundLoad;
-            if (dep.backgroundDeps && onBackgroundLoad) {
+            if (dep.lazyDependencies && onBackgroundLoad) {
               if (err) {
                 onBackgroundLoad(err, undefined);
               } else {
                 const deps = {};
-                for (const depSpec of dep.backgroundDeps) {
-                  deps[depSpec.name] = mods[depSpec.name].value;
+                for (const depSpec of dep.lazyDependencies) {
+                  deps[depSpec] = mods[depSpec].value;
                 }
                 onBackgroundLoad(undefined, deps);
               }
