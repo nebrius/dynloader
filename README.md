@@ -63,13 +63,13 @@ Since this is a normal JavaScript function, it can be loaded from anywhere in co
 
 The trick to getting this system to work is by running a small and fast tool over a project's source code and creating a dependency map of the entire project. Note that this is _not_ a complete dependency tree. This dependency map is shipped to the client, which it then uses to do smart loading of dependencies and to know how to bundle dependencies.
 
-The example project uses a handlebars template to [initialize the loader](blob/master/templates/index.handlebars#L8), with the following line:
+The example project uses a handlebars template to [initialize the loader](templates/index.handlebars#L8), with the following line:
 
 ```JavaScript
 dyn.init({{{moduleInfo}}});
 ```
 
-This prototype creates the map during [server startup](blob/master/server/src/server.ts#L9).
+This prototype creates the map during [server startup](server/src/server.ts#L9).
 
 ## Possible Features
 
