@@ -102,7 +102,27 @@ That's not a question.
 
 **Fiiiine. Why does this look like require.js?**
 
-I wanted something familiar-ish looking to get bootstrapped quickly and I didn't want to spend a lot of time bike-shedding on the specification. I'm quite open to changing this syntax.
+I wanted something familiar-ish looking to get bootstrapped quickly and I didn't want to spend a lot of time bike-shedding on the specification. I'm _very_ open to changing this syntax.
+
+**Can you use ES2015 modules or CommonJS syntax instead? Why the new format?**
+
+Both formats have pros and cons, and ironically the pros of one are what the other lacks typically. CommonJS is simple and easy to understand, also allows for dynamic and/or lazy loading, and does not require a compile step. ES2015 modules do not allow for dynamic/lazy loading, are a bit more complex, and require a compilation step in practice, but they are statically analyzable. This means tooling around ES6 modules is _much_ more intelligent.
+
+I'm trying to have my cake and eat it too: statically analyzable modules, along with the optimizations that come along with it, combined with the ease of us of CommonJS and the ability to do lazy/conditional loading. Also, no compilation step.
+
+I also want to implement tools that will compile code written for CommonJS and ES2015 Modules into my format so that they can both be backwards compatible (probably with some edge cases). This way, you can choose to use wichever syntax you prefer while still being able to take advantage of the extra features I provide.
+
+**How do I integrate this into my server?**
+
+Stay tuned! Everything is so prototype-y that there are no separable interfaces yet. I hope to fix this soon though and provide a couple of modules (published to npm of course) that provide all of the server and client components necessary in an easy to use package.
+
+**Is this a replacement for webpack/Browserify?**
+
+It depends on what you're using webpack/Browserify for, but I would say "no" for most use cases. Webpack and Browserify offer a _lot_ of functionality, and can be used for a lot of things. My view is that these systems are first and foremost _compilation_ and _bundling_ tools. While they both include a module loader, that is only a tiny fraction of what these tools can do.
+
+This system is a module loader _only_, by design. I do not think that compilation or other sorts of asset transformation belong in this system. My vision is a future where webpack and Browserify are still the build tools used by web devs, and they compile to this format.
+
+In other words, I think these tools and this system are complimentary, not competitive.
 
 # License
 
