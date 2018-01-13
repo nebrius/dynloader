@@ -8,12 +8,12 @@ I'd love for you to take a look and let me know what you think by filing an issu
 
 This loader has the following design goals:
 
-- Dynamic loading
+- Dynamic and conditional loading
     - The ability to programatically load dependencies on-demand.
     - Ex. an SPA wants to load the dependencies for a single route only when it's selected, but not the dependencies for the other routes. Future routes should be loaded only when the user requests to navigate to that route.
 - Bundling dependencies for transport
 - Lazy loaded dependencies
-    - Dependencies split into two sets.
+    - Dependencies should be split into two sets.
     - Load dependencies must be evaluated before evaluating the module like in ES6 modules and Require.js)
     - Lazy dependencies are not fetched until after module evaluation is complete
 - No Code Compilation
@@ -22,11 +22,11 @@ This loader has the following design goals:
     - No need for package.json (unless using npm modules), or any other configuration files
 - Support for CommonJS modules installed via npm
 
-These goals were largely inspired by the needs of the Rdio web client, a very large single page web app. The codebase was large enough that it was very slow to bundle all scripts for the entire site. Webpack offers code-splitting, but it's difficult to manage and offers no mechanisms for loading the different sets of scripts.
+These goals were largely inspired by the needs of the Rdio web client, a very large single page web app. The codebase was large enough that bundling all scripts for the entire site created unacceptable load times. Webpack offers code-splitting, but it's difficult to manage and offers no mechanisms for loading the different sets of scripts defined above.
 
 ## Module definition spec
 
-Modules are defined using ES5 compatible JavaScript syntax. This does _not_ use ES6 module syntax (for now?). A module is defined using:
+Modules are defined using ES5 compatible JavaScript syntax. This does _not_ use ECMAScript module syntax (for now?). A module is defined using:
 
 ```JavaScript
 dyn.register({
@@ -52,12 +52,12 @@ dyn.register({
 Using the example from the previous section, we can load `myModule` with the following code:
 
 ```JavaScript
-load('myModule', (err, { myModule }) => {
+dyn.load('myModule', (err, { myModule }) => {
   console.log(myModule.run()); // prints "running"
 })
 ```
 
-Since this is a normal JavaScript function, it can be loaded from anywhere in code, including insite of conditional statements.
+Since this is a normal JavaScript function, it can be loaded from anywhere in code, including inside of conditional statements.
 
 ## Initialization
 
@@ -75,12 +75,12 @@ This prototype creates the map during [server startup](server/src/server.ts#L9).
 
 This specification was designed specifically to enable a lot of other cool features, including:
 
-- Service Works and Local Storage for caching dependencies in the background
+- Service Works or Local Storage for caching dependencies in the background
 - Tracking app build versions, and downloading code patches instead of full files if older versions are already cached (think `git diff`) to decrease download time even more
 - Auto-swap caching strategies to optimize for HTTP vs HTTP/2 depending on combination of browser and server capabilities
 - Compiling ES6-module based code into this format for backwards compatibility
 - Intermediate/transport specifications so there can be multiple client and server implementations supporting this spec
-- Conditional loading on the server of module code, e.g. serving optimized builds for modern browsers and serving non-optimized-but-backwards-compatible builds for older browsers.
+- Conditional loading on the server of module code, e.g. automatically serving optimized builds for modern browsers and serving non-optimized-but-backwards-compatible builds for older browsers.
 
 ## FAQ
 
@@ -104,13 +104,13 @@ That's not a question.
 
 I wanted something familiar-ish looking to get bootstrapped quickly and I didn't want to spend a lot of time bike-shedding on the specification. I'm _very_ open to changing this syntax.
 
-**Can you use ES2015 modules or CommonJS syntax instead? Why the new format?**
+**Can you use ECMAScript Modules or CommonJS syntax instead? Why the new format?**
 
-Both formats have pros and cons, and ironically the pros of one are what the other lacks typically. CommonJS is simple and easy to understand, also allows for dynamic and/or lazy loading, and does not require a compile step. ES2015 modules do not allow for dynamic/lazy loading, are a bit more complex, and require a compilation step in practice, but they are statically analyzable. This means tooling around ES6 modules is _much_ more intelligent.
+Both formats have pros and cons, and ironically the pros of one are what the other lacks typically. CommonJS is simple and easy to understand and does not require a compile step. ECMAScript Modules are a bit more complex, and require a compilation step in practice, but they are statically analyzable (but only when using the import keyword, not the import function). This means tooling around ES6 modules is _much_ more intelligent.
 
 I'm trying to have my cake and eat it too: statically analyzable modules, along with the optimizations that come along with it, combined with the ease of us of CommonJS and the ability to do lazy/conditional loading. Also, no compilation step.
 
-I also want to implement tools that will compile code written for CommonJS and ES2015 Modules into my format so that they can both be backwards compatible (probably with some edge cases). This way, you can choose to use wichever syntax you prefer while still being able to take advantage of the extra features I provide.
+I also want to implement tools that will compile code written for CommonJS and ECMAScript Modules into my format so that they can both be backwards compatible (probably with some edge cases). This way, you can choose to use wichever syntax you prefer while still being able to take advantage of the extra features I provide.
 
 **How do I integrate this into my server?**
 
